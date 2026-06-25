@@ -1,12 +1,13 @@
 services:
-  frontend:
+  ml:
     build:
-      context: ./frontend
-    container_name: factorypulse-frontend
+      context: ./ml
+    container_name: factorypulse-ml
+    env_file:
+      - ./ml/.env
     ports:
-      - "3001:80"
-    depends_on:
-      - backend
+      - "5001:5001"
+    restart: unless-stopped
 
   backend:
     build:
@@ -18,12 +19,14 @@ services:
       - "8070:8070"
     depends_on:
       - ml
+    restart: unless-stopped
 
-  ml:
+  frontend:
     build:
-      context: ./ml
-    container_name: factorypulse-ml
-    env_file:
-      - ./ml/.env
+      context: ./frontend
+    container_name: factorypulse-frontend
     ports:
-      - "5001:5001"
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
