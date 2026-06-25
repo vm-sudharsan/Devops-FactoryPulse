@@ -1,0 +1,29 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: factorypulse-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+    container_name: factorypulse-backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8070:8070"
+    depends_on:
+      - ml
+
+  ml:
+    build:
+      context: ./ml
+    container_name: factorypulse-ml
+    env_file:
+      - ./ml/.env
+    ports:
+      - "5001:5001"
