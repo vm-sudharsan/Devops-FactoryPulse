@@ -8,10 +8,10 @@ require('dotenv').config();
 
 class ThingSpeakService {
   constructor() {
-    // Hardcoded ThingSpeak credentials for single-prototype setup
-    this.channelId = '3054992';
-    this.readApiKey = 'RR1GW7ETRAT8H0DE';
-    this.writeApiKey = '37ZB71XBU3N9I2BE';
+    // ThingSpeak credentials loaded from environment variables
+    this.channelId = process.env.THINGSPEAK_CHANNEL_ID || '3054992';
+    this.readApiKey = process.env.THINGSPEAK_READ_API_KEY || '';
+    this.writeApiKey = process.env.THINGSPEAK_WRITE_API_KEY || '';
     this.apiUrl = `https://api.thingspeak.com/channels/${this.channelId}/feeds.json?api_key=${this.readApiKey}&results=1`;
     this.fetchInterval = process.env.THINGSPEAK_FETCH_INTERVAL || 60000;
     this.cronJob = null;
@@ -161,7 +161,7 @@ class ThingSpeakService {
         throw new Error(`Please wait ${waitTime} seconds before toggling again (ThingSpeak rate limit + ESP32 coordination)`);
       }
       
-      // Use hardcoded write API key for single-prototype setup
+      // Use write API key from environment variables
       const url = `https://api.thingspeak.com/update?api_key=${this.writeApiKey}&field${fieldId}=${value}`;
       
       console.log(`Updating ThingSpeak field${fieldId} to ${value}...`);

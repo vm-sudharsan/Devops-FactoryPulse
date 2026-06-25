@@ -1,15 +1,19 @@
 const cors = require('cors');
 require('dotenv').config();
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'https://factory-pulse.netlify.app',
-  'http://localhost:3000'
-].filter(Boolean); // Remove undefined/null values
+// FRONTEND_URL supports a single origin or comma-separated list of origins
+// Examples:
+//   Single:   http://localhost:3001
+//   Multiple: http://localhost:3001,http://localhost:3000,https://yourdomain.com
+const rawOrigins = process.env.FRONTEND_URL || 'http://localhost:3001';
+const allowedOrigins = rawOrigins
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, curl)
+    // Allow requests with no origin (mobile apps, Postman, curl, server-to-server)
     if (!origin) return callback(null, true);
 
     const isAllowed = allowedOrigins.some(
@@ -19,7 +23,6 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      // Log warning but still allow the request to prevent blocking
       console.warn('⚠️ CORS warning - Origin not in allowlist:', origin);
       console.warn('Allowed origins:', allowedOrigins);
       // Allow anyway to prevent blocking - just log for monitoring

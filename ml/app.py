@@ -22,7 +22,18 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # CORS Configuration
-cors_origins_str = os.getenv('CORS_ORIGINS', 'http://localhost:8080,https://factory-pulse.netlify.app,https://factorypulse-backend.onrender.com')
+# CORS_ORIGINS must be set via environment variable.
+# Accepts a comma-separated list of allowed origins.
+#
+# Only browser-originated requests are subject to CORS.
+# Backend → ML communication is server-to-server and is NOT affected by CORS.
+# Set this to the frontend origin(s) only.
+#
+# Examples:
+#   Local:      http://localhost:3001
+#   Docker:     http://localhost:3001
+#   Kubernetes: https://yourdomain.com
+cors_origins_str = os.getenv('CORS_ORIGINS', 'http://localhost:3001')
 allowed_origins = [origin.strip() for origin in cors_origins_str.split(',') if origin.strip()]
 logger.info(f'CORS allowed origins: {allowed_origins}')
 
