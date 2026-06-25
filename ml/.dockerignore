@@ -1,0 +1,37 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment files
+.env
+
+# Runtime uploads
+uploads/
+
+# Sample/Test files
+sample_data.csv
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node.js artifacts (unused in ML service)
+node_modules/
+package.json
+package-lock.json
+
+# Docker
+Dockerfile
