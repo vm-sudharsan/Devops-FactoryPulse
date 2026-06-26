@@ -187,6 +187,80 @@ stage('Docker Hub Login') {
 
         }
 
+
+stage('Deploy to Kubernetes') {
+
+    when {
+        expression { params.DOCKER_PUSH }
+    }
+
+    steps {
+
+        echo "==========================================="
+        echo "Deploying Build ${BUILD_NUMBER} to Kubernetes"
+        echo "==========================================="
+
+        // Safe Kubernetes resources
+        bat '''
+        kubectl apply -f kubernetes/namespace.yaml
+        kubectl apply -f kubernetes/configmap.yaml
+        kubectl apply -f kubernetes/backend-service.yaml
+        kubectl apply -f kubernetes/ml-service.yaml
+        kubectl apply -f kubernetes/frontend-service.yaml
+        kubectl apply -f kubernetes/backend-deployment.yaml
+        kubectl apply -f kubernetes/ml-deployment.yaml
+        kubectl apply -f kubernetes/frontend-deployment.yaml
+        '''
+
+        // Update images to current build
+        bat """
+        kubectl set image deployment/backend ^
+        backend=${DOCKER_USERNAME}/${BACKEND_IMAGE}:${BUILD_NUMBER} ^
+        -n factorypulse
+        """
+
+        bat """
+        kubectl set image deployment/ml ^
+        ml=${DOCKER_USERNAME}/${ML_IMAGE}:${BUILD_NUMBER} ^
+        -n factorypulse
+        """
+
+        bat """
+        kubectl set image deployment/frontend ^
+        frontend=${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${BUILD_NUMBER} ^
+        -n factorypulse
+        """
+
+        // Wait for rollout
+        bat '''
+        kubectl rollout status deployment/backend -n factorypulse
+        '''
+
+        bat '''
+        kubectl rollout status deployment/ml -n factorypulse
+        '''
+
+        bat '''
+        kubectl rollout status deployment/frontend -n factorypulse
+        '''
+
+        // Deployment summary
+        bat '''
+        kubectl get deployments -n factorypulse
+        '''
+
+        bat '''
+        kubectl get pods -n factorypulse
+        '''
+
+        echo "==========================================="
+        echo "Deployment Successful"
+        echo "==========================================="
+
+    }
+
+}
+
         stage('Docker Cleanup') {
 
             steps {
@@ -210,21 +284,6 @@ stage('Docker Hub Login') {
             }
 
         }
-
-        stage('Deploy to Kubernetes') {
-
-            when {
-                expression { false }
-            }
-
-            steps {
-
-                echo 'Kubernetes deployment will be enabled after K3s setup.'
-
-            }
-
-        }
-
     }
 
     post {
