@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: factorypulse-config
+  namespace: factorypulse
+  labels:
+    app: factorypulse
+
+data:
+  # Backend Configuration
+  PORT: "8070"
+  NODE_ENV: "production"
+  DB_TYPE: "mongodb"
+  FRONTEND_URL: "http://frontend-service"
+  THINGSPEAK_FETCH_INTERVAL: "60000"
+  ML_TIMEOUT: "120000"
+
+  # ML Configuration
+  FLASK_ENV: "production"
+  ML_PORT: "5001"
