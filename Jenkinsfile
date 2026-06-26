@@ -36,29 +36,30 @@ pipeline {
             }
         }
 
-        stage('Docker Hub Login') {
+stage('Docker Hub Login') {
 
-            when {
-                expression { params.DOCKER_PUSH }
-            }
+    when {
+        expression { params.DOCKER_PUSH }
+    }
 
-            steps {
+    steps {
 
-                withCredentials([usernamePassword(
-                        credentialsId: "${DOCKER_CREDENTIALS_ID}",
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                )]) {
+        withCredentials([usernamePassword(
+            credentialsId: 'dockerhub-creds',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+        )]) {
 
-                    bat '''
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                    '''
-
-                }
-
-            }
+            bat '''
+            docker logout
+            echo|set /p="%DOCKER_PASS%" | docker login -u "%DOCKER_USER%" --password-stdin
+            '''
 
         }
+
+    }
+
+}
 
         stage('Build ML Image') {
 
