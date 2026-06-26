@@ -187,7 +187,6 @@ stage('Docker Hub Login') {
 
         }
 
-
 stage('Deploy to Kubernetes') {
 
     when {
@@ -196,71 +195,132 @@ stage('Deploy to Kubernetes') {
 
     steps {
 
-        echo "==========================================="
-        echo "Deploying Build ${BUILD_NUMBER} to Kubernetes"
-        echo "==========================================="
+        script {
 
-        // Safe Kubernetes resources
-        bat '''
-        kubectl apply -f kubernetes/namespace.yaml
-        kubectl apply -f kubernetes/configmap.yaml
-        kubectl apply -f kubernetes/backend-service.yaml
-        kubectl apply -f kubernetes/ml-service.yaml
-        kubectl apply -f kubernetes/frontend-service.yaml
-        kubectl apply -f kubernetes/backend-deployment.yaml
-        kubectl apply -f kubernetes/ml-deployment.yaml
-        kubectl apply -f kubernetes/frontend-deployment.yaml
-        '''
+            try {
 
-        // Update images to current build
-        bat """
-        kubectl set image deployment/backend ^
-        backend=${DOCKER_USERNAME}/${BACKEND_IMAGE}:${BUILD_NUMBER} ^
-        -n factorypulse
-        """
+                echo "==========================================="
+                echo "Deploying Build ${BUILD_NUMBER} to Kubernetes"
+                echo "==========================================="
 
-        bat """
-        kubectl set image deployment/ml ^
-        ml=${DOCKER_USERNAME}/${ML_IMAGE}:${BUILD_NUMBER} ^
-        -n factorypulse
-        """
+                // Apply Kubernetes Resources (DO NOT APPLY secret.yaml)
+                bat '''
+                kubectl apply -f kubernetes/namespace.yaml
+                kubectl apply -f kubernetes/configmap.yaml
 
-        bat """
-        kubectl set image deployment/frontend ^
-        frontend=${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${BUILD_NUMBER} ^
-        -n factorypulse
-        """
+                kubectl apply -f kubernetes/backend-service.yaml
+                kubectl apply -f kubernetes/frontend-service.yaml
+                kubectl apply -f kubernetes/ml-service.yaml
 
-        // Wait for rollout
-        bat '''
-        kubectl rollout status deployment/backend -n factorypulse
-        '''
+                kubectl apply -f kubernetes/backend-deployment.yaml
+                kubectl apply -f kubernetes/frontend-deployment.yaml
+                kubectl apply -f kubernetes/ml-deployment.yaml
 
-        bat '''
-        kubectl rollout status deployment/ml -n factorypulse
-        '''
+                kubectl apply -f kubernetes/ingress.yaml
 
-        bat '''
-        kubectl rollout status deployment/frontend -n factorypulse
-        '''
+                kubectl apply -f kubernetes/backend-hpa.yaml
+                kubectl apply -f kubernetes/frontend-hpa.yaml
+                kubectl apply -f kubernetes/ml-hpa.yaml
 
-        // Deployment summary
-        bat '''
-        kubectl get deployments -n factorypulse
-        '''
+                kubectl apply -f kubernetes/backend-pdb.yaml
+                kubectl apply -f kubernetes/frontend-pdb.yaml
+                kubectl apply -f kubernetes/ml-pdb.yaml
+                '''
 
-        bat '''
-        kubectl get pods -n factorypulse
-        '''
+                // Update Backend Image
+                bat """
+                kubectl set image deployment/backend ^
+                backend=${DOCKER_USERNAME}/${BACKEND_IMAGE}:${BUILD_NUMBER} ^
+                -n factorypulse
+                """
 
-        echo "==========================================="
-        echo "Deployment Successful"
-        echo "==========================================="
+                // Update ML Image
+                bat """
+                kubectl set image deployment/ml ^
+                ml=${DOCKER_USERNAME}/${ML_IMAGE}:${BUILD_NUMBER} ^
+                -n factorypulse
+                """
+
+                // Update Frontend Image
+                bat """
+                kubectl set image deployment/frontend ^
+                frontend=${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${BUILD_NUMBER} ^
+                -n factorypulse
+                """
+
+                // Wait for Rollout
+                bat '''
+                kubectl rollout status deployment/backend -n factorypulse
+                '''
+
+                bat '''
+                kubectl rollout status deployment/ml -n factorypulse
+                '''
+
+                bat '''
+                kubectl rollout status deployment/frontend -n factorypulse
+                '''
+
+                // Deployment Summary
+                bat '''
+                kubectl get deployments -n factorypulse
+                '''
+
+                bat '''
+                kubectl get pods -n factorypulse
+                '''
+
+                echo "==========================================="
+                echo "Deployment Successful"
+                echo "==========================================="
+
+            } catch (Exception e) {
+
+                echo "==========================================="
+                echo "Deployment Failed!"
+                echo "Rolling back to previous stable revision..."
+                echo "==========================================="
+
+                // Rollback all deployments
+                bat '''
+                kubectl rollout undo deployment/backend -n factorypulse
+                '''
+
+                bat '''
+                kubectl rollout undo deployment/ml -n factorypulse
+                '''
+
+                bat '''
+                kubectl rollout undo deployment/frontend -n factorypulse
+                '''
+
+                // Wait for rollback
+                bat '''
+                kubectl rollout status deployment/backend -n factorypulse
+                '''
+
+                bat '''
+                kubectl rollout status deployment/ml -n factorypulse
+                '''
+
+                bat '''
+                kubectl rollout status deployment/frontend -n factorypulse
+                '''
+
+                echo "==========================================="
+                echo "Rollback Successful"
+                echo "Previous stable version restored."
+                echo "==========================================="
+
+                error("Deployment failed and rollback completed.")
+
+            }
+
+        }
 
     }
 
 }
-
         stage('Docker Cleanup') {
 
             steps {
