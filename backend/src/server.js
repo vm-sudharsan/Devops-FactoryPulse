@@ -11,6 +11,8 @@ const operatorRoutes = require('./routes/operatorRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const mlRoutes = require('./routes/mlRoutes');
 const healthRoutes = require('./routes/healthRoutes');
+const metricsRoutes = require('./routes/metricsRoutes');
+const { httpMetricsMiddleware } = require('./metrics/metrics');
 const thingSpeakService = require('./services/thingSpeakService');
 const notificationService = require('./services/notificationService');
 const { sessionActivityMiddleware } = require('./middleware/sessionMiddleware');
@@ -77,8 +79,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Metrics endpoint - no auth, no rate limiting, must be registered first
+app.use('/metrics', metricsRoutes);
+
 // Session Activity Middleware
 app.use(sessionActivityMiddleware);
+
+// HTTP metrics middleware - records request count and duration for all routes
+// Registered after /metrics so the scrape endpoint itself is not instrumented
+app.use(httpMetricsMiddleware);
 
 // Health check route (no rate limiting)
 app.use('/health', healthRoutes);
